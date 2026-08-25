@@ -260,11 +260,15 @@ Listées pour cadrer le périmètre, à ne pas implémenter sans arbitrage expli
 - CI : le dépôt est sur GitHub (remote `EnhydraV/mattermost-plugin-redmine`), le `ci.yml`
   du template (workflow réutilisable `mattermost/actions-workflows/plugin-ci.yml`) est conservé.
   Le « CI Forgejo » du §9 n'a donc pas été mis en place ; à arbitrer si le dépôt doit migrer.
-- Release : version issue du tag git `v*` (`build/manifest`). Le workflow réutilisable Mattermost
-  ne publie rien sur tag (livraison S3 avec leurs secrets) : ajout de `.github/workflows/release.yml`
-  (setup Go/Node, `make dist`, release GitHub via `softprops/action-gh-release@v2`). Pas de tag
-  posé (pas de push possible depuis le conteneur) : `git tag v0.1.0` puis push du tag = première
-  release.
+- Release : semver automatique. `release-please.yml` (googleapis/release-please-action@v5,
+  type `simple`, manifest `.release-please-manifest.json` + `version.txt`, sections de CHANGELOG en
+  français) ouvre la PR de release sur `master` ; au merge, tag `vX.Y.Z` + release GitHub, puis un
+  second job `bundle` fait `make dist` et attache le tarball (un tag posé par `GITHUB_TOKEN` ne
+  déclenche pas d'autre workflow, d'où le job dans le même run). `commitlint.yml`
+  (wagoid/commitlint-github-action@v6, `commitlint.config.mjs`, `subject-case` désactivé pour le
+  français) contrôle les PR. Le workflow réutilisable Mattermost ne publie rien sur tag (S3 avec
+  leurs secrets). Première release = merger la PR « chore(master): release 0.1.0 » que release-please
+  ouvrira après le premier push de `feat:`.
 - Outillage local : golangci-lint 2.9.0 ne lit pas les données d'export de Go 1.27
   (« export data version 4 ») ; `make check-style` côté Go doit être vérifié en CI avec la
   version de `go.mod`. `gofmt -l` signale `server/main.go` uniquement à cause du CRLF.

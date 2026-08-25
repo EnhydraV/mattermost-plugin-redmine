@@ -93,8 +93,16 @@ Pour le déploiement local, définir `MM_SERVICESETTINGS_SITEURL` et `MM_ADMIN_T
 
 ### Release
 
-La version vient du tag git : `git tag v0.1.0`, puis push du tag. `ci.yml` (workflow réutilisable
-`mattermost/actions-workflows`) lint, teste et construit à chaque push ; `release.yml` crée une
-release GitHub avec le bundle `dist/*.tar.gz` à chaque tag `v*`.
+Semver automatique par [Conventional Commits](https://www.conventionalcommits.org/) :
+
+- `commitlint.yml` vérifie le format des messages sur chaque PR (`feat:`, `fix:`, `docs:`,
+  `chore:`, `refactor:`, `ci:`, `test:`, `perf:` ; `feat!:` ou `BREAKING CHANGE:` pour un majeur).
+- `release-please.yml` lit les commits poussés sur `master`, ouvre et maintient une PR de release
+  (version calculée, `CHANGELOG.md`, `version.txt`). Au merge de cette PR, il pose le tag
+  `vX.Y.Z`, crée la release GitHub, puis construit et y attache le bundle `dist/*.tar.gz`.
+- Avant 1.0.0, un `feat` incrémente le mineur et un `fix` le correctif (`bump-minor-pre-major`).
+
+`ci.yml` (workflow réutilisable `mattermost/actions-workflows`) lint, teste et construit à
+chaque push et PR. Aucun tag n'est à poser à la main.
 
 Basé sur [mattermost-plugin-starter-template](https://github.com/mattermost/mattermost-plugin-starter-template).
