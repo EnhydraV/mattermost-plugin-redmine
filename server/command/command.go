@@ -14,8 +14,10 @@ import (
 const Trigger = "redmine"
 
 // Identifiant de projet Redmine : minuscules, chiffres, tirets et soulignés, pas uniquement numérique.
-var projectIdentifierPattern = regexp.MustCompile(`^[a-z0-9_-]{1,100}$`)
-var onlyDigits = regexp.MustCompile(`^[0-9]+$`)
+var (
+	projectIdentifierPattern = regexp.MustCompile(`^[a-z0-9_-]{1,100}$`)
+	onlyDigits               = regexp.MustCompile(`^[0-9]+$`)
+)
 
 // Deps isole ce dont la commande a besoin, pour rester testable sans serveur.
 type Deps struct {

@@ -1,19 +1,52 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "simple",
+  "initial-version": "0.1.0",
   "include-component-in-tag": false,
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": false,
   "changelog-sections": [
-    {"type": "feat", "section": "Fonctionnalités"},
-    {"type": "fix", "section": "Correctifs"},
-    {"type": "perf", "section": "Performances"},
-    {"type": "revert", "section": "Annulations"},
-    {"type": "docs", "section": "Documentation", "hidden": true},
-    {"type": "chore", "section": "Divers", "hidden": true},
-    {"type": "refactor", "section": "Refactorisation", "hidden": true},
-    {"type": "test", "section": "Tests", "hidden": true},
-    {"type": "ci", "section": "CI", "hidden": true}
+    {
+      "type": "feat",
+      "section": "Fonctionnalités"
+    },
+    {
+      "type": "fix",
+      "section": "Correctifs"
+    },
+    {
+      "type": "perf",
+      "section": "Performances"
+    },
+    {
+      "type": "revert",
+      "section": "Annulations"
+    },
+    {
+      "type": "docs",
+      "section": "Documentation",
+      "hidden": true
+    },
+    {
+      "type": "chore",
+      "section": "Divers",
+      "hidden": true
+    },
+    {
+      "type": "refactor",
+      "section": "Refactorisation",
+      "hidden": true
+    },
+    {
+      "type": "test",
+      "section": "Tests",
+      "hidden": true
+    },
+    {
+      "type": "ci",
+      "section": "CI",
+      "hidden": true
+    }
   ],
   "packages": {
     ".": {}

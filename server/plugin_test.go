@@ -42,7 +42,7 @@ func TestGetConfigReturnsNormalizedConfig(t *testing.T) {
 	p.ServeHTTP(&plugin.Context{}, w, r)
 
 	result := w.Result()
-	defer result.Body.Close()
+	defer func() { _ = result.Body.Close() }()
 	require.Equal(t, http.StatusOK, result.StatusCode)
 
 	var got clientConfig

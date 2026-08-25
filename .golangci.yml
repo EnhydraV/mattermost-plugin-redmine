@@ -35,6 +35,10 @@ linters:
           disabled: true
         - name: unused-parameter
           disabled: true
+    misspell:
+      locale: US
+      ignore-rules:
+        - commandes
     unqueryvet:
       check-sql-builders: true
   exclusions:

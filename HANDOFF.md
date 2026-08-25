@@ -267,8 +267,12 @@ Listées pour cadrer le périmètre, à ne pas implémenter sans arbitrage expli
   déclenche pas d'autre workflow, d'où le job dans le même run). `commitlint.yml`
   (wagoid/commitlint-github-action@v6, `commitlint.config.mjs`, `subject-case` désactivé pour le
   français) contrôle les PR. Le workflow réutilisable Mattermost ne publie rien sur tag (S3 avec
-  leurs secrets). Première release = merger la PR « chore(master): release 0.1.0 » que release-please
-  ouvrira après le premier push de `feat:`.
+  leurs secrets). Première release = merger la PR « chore(master): release 0.1.0 » ouverte par release-please
+  (`initial-version: 0.1.0`, sinon il part à 1.0.0 faute de release antérieure). Prérequis côté
+  dépôt, activé le 2026-08-25 via `gh api` : Settings > Actions > « Allow GitHub Actions to create
+  and approve pull requests », sans quoi release-please pousse la branche puis échoue sur la PR.
+- golangci-lint en CI : `misspell` est en `locale: US` avec `ignore-rules` pour le vocabulaire
+  français des messages (à compléter si un autre mot est signalé).
 - Outillage local : golangci-lint 2.9.0 ne lit pas les données d'export de Go 1.27
   (« export data version 4 ») ; `make check-style` côté Go doit être vérifié en CI avec la
   version de `go.mod`. `gofmt -l` signale `server/main.go` uniquement à cause du CRLF.
