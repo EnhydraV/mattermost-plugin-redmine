@@ -206,7 +206,21 @@ Listées pour cadrer le périmètre, à ne pas implémenter sans arbitrage expli
 - `CLAUDE.md` créé (environnement, conventions, questions §8 ouvertes).
 - Go absent de l'image superclaude : installé dans `/home/node/sdk/go` (Go 1.27.0).
 
-### Proposition M1 soumise à validation : `buildIssueUrl`
+### 2026-08-25 : M1 terminé
+
+- `webapp/src/redmine/buildIssueUrl.ts` : module pur, signature validée telle que ci-dessous.
+  Troncature par points de code (pas d'emoji coupé), recherche dichotomique du plus long
+  préfixe dont la forme encodée tient dans le budget, garde-fou `MIN_BODY_BUDGET = 40`
+  (en dessous, repli direct sur la provenance seule). Sujet : première ligne non vide,
+  débarrassée du markdown de structure (`#`, `>`, listes, fences).
+- 11 tests jest verts (`npx jest src/redmine`), tsc OK, eslint OK hors `linebreak-style`.
+- Décision : Redmine supposé en Markdown/CommonMark, aucun traitement du corps.
+- Limite connue : avec un permalien pathologiquement long (> ~1800 car.), même le repli
+  dépasse le budget ; la priorité au permalien l'emporte, conformément au §4.
+- Prochaine étape : M2 (action de menu post, `window.open`, récupération de la config via
+  `/api/v1/config`, repli sans projet).
+
+### Signature validée de `buildIssueUrl`
 
 ```ts
 // webapp/src/redmine/buildIssueUrl.ts, module pur
