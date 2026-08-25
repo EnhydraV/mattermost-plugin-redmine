@@ -220,6 +220,55 @@ Listées pour cadrer le périmètre, à ne pas implémenter sans arbitrage expli
 - Prochaine étape : M2 (action de menu post, `window.open`, récupération de la config via
   `/api/v1/config`, repli sans projet).
 
+### 2026-08-25 : M2 terminé
+
+- `webapp/src/index.tsx` : `registerPostDropdownMenuAction` (libellé « Créer un ticket Redmine »),
+  filtre excluant les messages système et les posts inconnus du store.
+- `src/redmine/postContext.ts` : extraction depuis le store (message, auteur, canal, permalien
+  `{SiteURL}/{team}/pl/{post_id}` ; MP/groupes sans équipe → équipe courante).
+- `src/redmine/fetchConfig.ts` : `GET /plugins/<id>/api/v1/config?channel_id=`, respecte un
+  sous-chemin de SiteURL.
+- `src/redmine/openIssueForm.ts` : ouvre l'onglet de façon synchrone (anti-popup) puis pose l'URL ;
+  `opener = null`. RedmineURL vide → onglet fermé + `alert` explicite (pas de modale Mattermost
+  disponible sans réintroduire du React). Repli §6 cas 3 : `/issues/new` sans projet.
+- Le d.ts du template était faux : `action` et `filter` reçoivent `postId` (cf. `dot_menu.tsx`),
+  déclaration corrigée dans `src/types/mattermost-webapp/index.d.ts`.
+- Jest 27 ignore le champ `exports` de `mattermost-redux` / `@mattermost/types` : `moduleNameMapper`
+  ajoutés dans `package.json` vers `lib/`.
+- 20 tests jest verts, tsc OK, eslint OK, `make dist` OK.
+- Non testé en conditions réelles (pas de serveur Mattermost dans le conteneur) : le clic réel sur
+  une instance reste à valider par toi.
+
+### 2026-08-25 : M3 terminé
+
+- `server/store/kvstore` : `ChannelProjects` (clé `redmine_channel_<channel_id>`), Get/Set/Delete.
+- `server/command` : `/redmine link <identifiant>|unlink|status`, autocomplétion. `link` et
+  `unlink` réservés aux détenteurs de `manage_channel_roles` sur le canal (admins de canal et
+  admins système). Validation de l'identifiant Redmine (`^[a-z0-9_-]{1,100}$`, pas uniquement
+  numérique). Dépendances injectées (`command.Deps`) pour tester sans serveur ; 9 tests.
+- `/api/v1/config` applique l'ordre du §6 : mapping du canal, puis projet par défaut, sinon "".
+  Test dédié.
+- Côté webapp, rien à changer : `channel_id` était déjà envoyé depuis M2.
+
+### 2026-08-25 : M4 terminé (hors validation en conditions réelles)
+
+- i18n fr/en sans react-intl : `src/redmine/messages.ts` (dictionnaires typés) + `i18n.ts`
+  (`fr-FR`/`fr_CA` → `fr`, défaut `en`). Le libellé du menu est un composant `MenuLabel` qui lit
+  la locale de l'utilisateur au rendu, pas à l'initialisation (utilisateur pas forcément
+  chargé). Les textes `plugin.json` et des commandes slash restent en français (non localisable).
+- README réécrit (prérequis, installation, configuration, usage, `/redmine`, release).
+- CI : le dépôt est sur GitHub (remote `EnhydraV/mattermost-plugin-redmine`), le `ci.yml`
+  du template (workflow réutilisable `mattermost/actions-workflows/plugin-ci.yml`) est conservé.
+  Le « CI Forgejo » du §9 n'a donc pas été mis en place ; à arbitrer si le dépôt doit migrer.
+- Release : version issue du tag git `v*` (`build/manifest`). Le workflow réutilisable Mattermost
+  ne publie rien sur tag (livraison S3 avec leurs secrets) : ajout de `.github/workflows/release.yml`
+  (setup Go/Node, `make dist`, release GitHub via `softprops/action-gh-release@v2`). Pas de tag
+  posé (pas de push possible depuis le conteneur) : `git tag v0.1.0` puis push du tag = première
+  release.
+- Outillage local : golangci-lint 2.9.0 ne lit pas les données d'export de Go 1.27
+  (« export data version 4 ») ; `make check-style` côté Go doit être vérifié en CI avec la
+  version de `go.mod`. `gofmt -l` signale `server/main.go` uniquement à cause du CRLF.
+
 ### Signature validée de `buildIssueUrl`
 
 ```ts
