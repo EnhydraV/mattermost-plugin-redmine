@@ -8,8 +8,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/plugin"
 )
 
-// clientConfig est ce que le webapp a besoin de connaître pour construire l'URL
-// du formulaire Redmine. Le projet dépendra du canal à partir du jalon M3.
+// clientConfig est ce que le webapp a besoin de connaître pour construire l'URL du formulaire Redmine.
 type clientConfig struct {
 	RedmineURL        string `json:"redmine_url"`
 	ProjectIdentifier string `json:"project_identifier"`
@@ -44,14 +43,13 @@ func (p *Plugin) MattermostAuthorizationRequired(next http.Handler) http.Handler
 	})
 }
 
-// handleGetConfig renvoie la configuration applicable au canal passé en query
-// (?channel_id=...). Le canal est ignoré jusqu'au jalon M3.
+// handleGetConfig renvoie la configuration applicable au canal passé en query (?channel_id=...).
 func (p *Plugin) handleGetConfig(w http.ResponseWriter, r *http.Request) {
 	config := p.getConfiguration()
 
 	response := clientConfig{
 		RedmineURL:        config.RedmineURL,
-		ProjectIdentifier: config.DefaultProjectIdentifier,
+		ProjectIdentifier: p.projectForChannel(r.URL.Query().Get("channel_id")),
 		TrackerID:         config.DefaultTrackerID,
 	}
 

@@ -54,6 +54,28 @@ func TestGetConfigReturnsNormalizedConfig(t *testing.T) {
 	}, got)
 }
 
+type fakeProjects map[string]string
+
+func (f fakeProjects) GetProject(channelID string) (string, error) { return f[channelID], nil }
+func (f fakeProjects) SetProject(channelID, id string) error       { f[channelID] = id; return nil }
+func (f fakeProjects) DeleteProject(channelID string) error        { delete(f, channelID); return nil }
+
+func TestGetConfigUsesChannelMappingBeforeDefault(t *testing.T) {
+	p := newTestPlugin(&configuration{RedmineURL: "https://r.example.com", DefaultProjectIdentifier: "def"})
+	p.channelProjects = fakeProjects{"c1": "toolbox"}
+
+	for channel, want := range map[string]string{"c1": "toolbox", "c2": "def", "": "def"} {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/api/v1/config?channel_id="+channel, nil)
+		r.Header.Set("Mattermost-User-ID", "user-1")
+		p.ServeHTTP(&plugin.Context{}, w, r)
+
+		var got clientConfig
+		require.NoError(t, json.NewDecoder(w.Result().Body).Decode(&got))
+		assert.Equal(t, want, got.ProjectIdentifier, "channel %q", channel)
+	}
+}
+
 func TestGetConfigEmptyWhenUnconfigured(t *testing.T) {
 	p := newTestPlugin(nil)
 
