@@ -1,32 +1,37 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost/server/public/plugin"
 )
 
-// initRouter initializes the HTTP router for the plugin.
+// clientConfig est ce que le webapp a besoin de connaître pour construire l'URL
+// du formulaire Redmine. Le projet dépendra du canal à partir du jalon M3.
+type clientConfig struct {
+	RedmineURL        string `json:"redmine_url"`
+	ProjectIdentifier string `json:"project_identifier"`
+	TrackerID         string `json:"tracker_id"`
+}
+
 func (p *Plugin) initRouter() *mux.Router {
 	router := mux.NewRouter()
-
-	// Middleware to require that the user is logged in
 	router.Use(p.MattermostAuthorizationRequired)
 
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
-
-	apiRouter.HandleFunc("/hello", p.HelloWorld).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/config", p.handleGetConfig).Methods(http.MethodGet)
 
 	return router
 }
 
-// ServeHTTP demonstrates a plugin that handles HTTP requests by greeting the world.
-// The root URL is currently <siteUrl>/plugins/com.mattermost.plugin-starter-template/api/v1/. Replace com.mattermost.plugin-starter-template with the plugin ID.
+// ServeHTTP délègue au routeur.
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	p.router.ServeHTTP(w, r)
 }
 
+// MattermostAuthorizationRequired rejette toute requête sans utilisateur Mattermost authentifié.
 func (p *Plugin) MattermostAuthorizationRequired(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Header.Get("Mattermost-User-ID")
@@ -39,9 +44,20 @@ func (p *Plugin) MattermostAuthorizationRequired(next http.Handler) http.Handler
 	})
 }
 
-func (p *Plugin) HelloWorld(w http.ResponseWriter, r *http.Request) {
-	if _, err := w.Write([]byte("Hello, world!")); err != nil {
-		p.API.LogError("Failed to write response", "error", err)
+// handleGetConfig renvoie la configuration applicable au canal passé en query
+// (?channel_id=...). Le canal est ignoré jusqu'au jalon M3.
+func (p *Plugin) handleGetConfig(w http.ResponseWriter, r *http.Request) {
+	config := p.getConfiguration()
+
+	response := clientConfig{
+		RedmineURL:        config.RedmineURL,
+		ProjectIdentifier: config.DefaultProjectIdentifier,
+		TrackerID:         config.DefaultTrackerID,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		p.API.LogError("Failed to write config response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
