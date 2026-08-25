@@ -277,6 +277,37 @@ Listées pour cadrer le périmètre, à ne pas implémenter sans arbitrage expli
   (« export data version 4 ») ; `make check-style` côté Go doit être vérifié en CI avec la
   version de `go.mod`. `gofmt -l` signale `server/main.go` uniquement à cause du CRLF.
 
+### Suite : recette de la 0.1.0 (à faire sur l'instance, hors conteneur)
+
+Merger la PR #1 (release-please) crée le tag `v0.1.0`, la release GitHub et y attache
+`com.cubedesigners.redmine-0.1.0.tar.gz`. Puis, dans l'ordre :
+
+1. Console système > Plugins > téléverser le bundle, activer, renseigner l'URL de Redmine
+   (sans projet par défaut dans un premier temps).
+2. Sur un message ordinaire : menu « … » > « Créer un ticket Redmine ». Attendu : nouvel onglet
+   sur `{Redmine}/issues/new` avec sélecteur de projet, sujet = première ligne, description =
+   corps + bloc de provenance + permalien cliquable. Vérifier que le libellé suit la langue du
+   compte Mattermost (fr/en).
+3. Renseigner un projet par défaut, recommencer : l'URL doit être `/projects/<id>/issues/new`.
+4. `/redmine link <autre-projet>` dans un canal (en tant qu'admin de canal), puis `/redmine
+   status` et l'action de menu : le projet du canal doit primer. Tester `link` avec un compte non
+   admin (refus attendu) et un identifiant invalide (`Toolbox`, `123`).
+5. Renseigner un tracker par défaut : `issue[tracker_id]` doit présélectionner le tracker. Sans
+   ce réglage, rien à préremplir côté champs personnalisés (piège documenté §3).
+6. Message de plus de 2000 caractères (coller un log) : description tronquée avec le marqueur
+   `[…] message tronqué, voir le lien ci-dessus`, permalien intact, pas de 414 ni de troncature
+   silencieuse côté nginx. C'est ici que se règle le point §8.3 (`large_client_header_buffers`).
+7. Message avec markdown (titre `##`, liste, bloc de code, emoji, accents) : rendu côté Redmine
+   lisible, ce qui confirme le choix Markdown/CommonMark du §8.2. Si c'est de la soupe, Redmine
+   est en Textile : à remonter avant toute autre chose.
+8. Message dans un MP ou un groupe : permalien construit avec l'équipe courante, doit s'ouvrir.
+9. Message système (« X a rejoint le canal ») : l'entrée de menu ne doit pas apparaître.
+10. Bloqueur de fenêtres actif dans le navigateur : l'onglet doit quand même s'ouvrir (ouverture
+    synchrone avant l'appel réseau).
+
+Consigner les réponses aux points §8 dans `CLAUDE.md` (section « Points §8 »), puis ouvrir des
+`fix:` pour ce qui coince ; release-please recalculera la version tout seul.
+
 ### Signature validée de `buildIssueUrl`
 
 ```ts
