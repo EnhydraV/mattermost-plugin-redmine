@@ -1,7 +1,7 @@
 {
     "id": "com.cubedesigners.redmine",
     "name": "Redmine",
-    "description": "Ajoute une action « Créer un ticket Redmine » au menu d'un message : ouvre le formulaire natif Redmine prérempli avec le contenu du message.",
+    "description": "Ajoute une action « Créer un ticket Redmine » au menu « Actions du message » : ouvre le formulaire natif Redmine prérempli avec le contenu du message.",
     "homepage_url": "https://github.com/EnhydraV/mattermost-plugin-redmine",
     "support_url": "https://github.com/EnhydraV/mattermost-plugin-redmine/issues",
     "icon_path": "assets/redmine-icon.svg",

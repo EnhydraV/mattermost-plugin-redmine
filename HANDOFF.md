@@ -277,6 +277,18 @@ Listées pour cadrer le périmètre, à ne pas implémenter sans arbitrage expli
   (« export data version 4 ») ; `make check-style` côté Go doit être vérifié en CI avec la
   version de `go.mod`. `gofmt -l` signale `server/main.go` uniquement à cause du CRLF.
 
+### 2026-08-25 : recette, premier retour
+
+- « Je ne vois pas le menu » : les actions enregistrées par `registerPostDropdownMenuAction` sont
+  rendues par `components/actions_menu/actions_menu.tsx`, c'est-à-dire le menu **Actions du
+  message** (icône à gauche du « … » dans la barre de survol), pas le menu « … » lui-même
+  (`dot_menu.tsx` n'a aucun point d'extension plugin). Ce bouton n'existe à l'écran que si un
+  plugin a enregistré un item, d'où l'impression qu'il n'y a « rien ». Le §1 du présent document
+  dit « menu « … » » par approximation ; README et description du plugin corrigés.
+- Vérifié dans les sources Mattermost : `filter(post.id)` et `action(post.id)`, le menu est
+  masqué pour les messages système côté webapp aussi (notre filtre est donc redondant mais
+  inoffensif).
+
 ### Suite : recette de la 0.1.0 (à faire sur l'instance, hors conteneur)
 
 Merger la PR #1 (release-please) crée le tag `v0.1.0`, la release GitHub et y attache
@@ -284,7 +296,8 @@ Merger la PR #1 (release-please) crée le tag `v0.1.0`, la release GitHub et y a
 
 1. Console système > Plugins > téléverser le bundle, activer, renseigner l'URL de Redmine
    (sans projet par défaut dans un premier temps).
-2. Sur un message ordinaire : menu « … » > « Créer un ticket Redmine ». Attendu : nouvel onglet
+2. Sur un message ordinaire : survol > icône « Actions du message » (à gauche du « … ») >
+   « Créer un ticket Redmine ». Attendu : nouvel onglet
    sur `{Redmine}/issues/new` avec sélecteur de projet, sujet = première ligne, description =
    corps + bloc de provenance + permalien cliquable. Vérifier que le libellé suit la langue du
    compte Mattermost (fr/en).

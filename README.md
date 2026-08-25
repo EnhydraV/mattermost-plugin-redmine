@@ -1,6 +1,8 @@
 # mattermost-plugin-redmine
 
-Ajoute une entrée **« Créer un ticket Redmine »** au menu « … » d'un message Mattermost.
+Ajoute une entrée **« Créer un ticket Redmine »** au menu **Actions du message** d'un message
+Mattermost (l'icône à gauche du « … » dans la barre de survol ; Mattermost ne l'affiche que si un
+plugin y a enregistré une action).
 Le clic ouvre, dans un nouvel onglet, le formulaire natif de création de ticket Redmine,
 prérempli avec le contenu du message : sujet (première ligne), description (corps du
 message, auteur, canal et permalien vers le message).
@@ -39,7 +41,8 @@ L'identifiant de projet est celui qui figure dans l'URL Redmine
 
 ### Créer un ticket depuis un message
 
-Menu « … » d'un message > **Créer un ticket Redmine**. Un onglet s'ouvre sur le formulaire
+Survoler un message > icône **Actions du message** (à gauche du « … ») > **Créer un ticket
+Redmine**. Un onglet s'ouvre sur le formulaire
 Redmine, prérempli. Tout reste modifiable avant validation : sujet, description, tracker,
 assigné, priorité, champs personnalisés, pièces jointes.
 
