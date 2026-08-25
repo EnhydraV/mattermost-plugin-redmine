@@ -546,15 +546,17 @@ export interface PluginRegistry {
         * - filter - A function whether to apply the plugin into the post' dropdown menu
         * Returns a unique identifier.
     */
+    // Corrigé par rapport au template : le webapp appelle action et filter avec l'id du post
+    // (components/dot_menu/dot_menu.tsx), pas avec le post ni sans argument.
     registerPostDropdownMenuAction(
         ...args: [
             text: React.ReactNode,
-            action: () => void,
-            filter: (post: Post) => boolean
+            action: (postId: string) => void,
+            filter?: (postId: string) => boolean
         ] | [{
             text: React.ReactNode;
-            action: () => void;
-            filter: (post: Post) => boolean;
+            action: (postId: string) => void;
+            filter?: (postId: string) => boolean;
         }]
     ): UniqueIdentifier;
 

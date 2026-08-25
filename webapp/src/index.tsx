@@ -1,17 +1,24 @@
-// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
-// See LICENSE.txt for license information.
-
 import manifest from 'manifest';
+import React from 'react';
 import type {Store} from 'redux';
 
 import type {GlobalState} from '@mattermost/types/store';
 
 import type {PluginRegistry} from 'types/mattermost-webapp';
 
+import MenuLabel from './components/menu_label';
+import {openIssueForm} from './redmine/openIssueForm';
+import {isEligiblePost} from './redmine/postContext';
+
 export default class Plugin {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
     public async initialize(registry: PluginRegistry, store: Store<GlobalState>) {
-        // @see https://developers.mattermost.com/extend/plugins/webapp/reference/
+        registry.registerPostDropdownMenuAction(
+            <MenuLabel store={store}/>,
+            (postId: string) => {
+                openIssueForm(store, postId);
+            },
+            (postId: string) => isEligiblePost(store.getState(), postId),
+        );
     }
 }
 
