@@ -7,12 +7,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// configuration reflète le settings_schema de plugin.json. Le plugin n'utilise
-// ces valeurs que pour construire une URL : aucune n'est un secret.
+// configuration reflète le settings_schema de plugin.json. Aucune valeur n'est un secret :
+// les trois premières servent à construire l'URL du formulaire, les deux dernières au relais.
 type configuration struct {
 	RedmineURL               string
 	DefaultProjectIdentifier string
 	DefaultTrackerID         string
+
+	// RelayUsernames liste les comptes (le bot de Redmine) autorisés à publier par le relais.
+	RelayUsernames string
+	// RelayMatchByEmail cherche l'utilisateur par email quand son login Redmine ne correspond à aucun compte.
+	RelayMatchByEmail bool
 }
 
 // Clone shallow copies the configuration.
@@ -27,7 +32,19 @@ func (c *configuration) normalized() *configuration {
 	clone.RedmineURL = strings.TrimRight(strings.TrimSpace(clone.RedmineURL), "/")
 	clone.DefaultProjectIdentifier = strings.TrimSpace(clone.DefaultProjectIdentifier)
 	clone.DefaultTrackerID = strings.TrimSpace(clone.DefaultTrackerID)
+	clone.RelayUsernames = strings.TrimSpace(clone.RelayUsernames)
 	return clone
+}
+
+// isRelayAllowed indique si le compte appelant fait partie des comptes autorisés à utiliser le relais.
+func (c *configuration) isRelayAllowed(username string) bool {
+	for name := range strings.SplitSeq(c.RelayUsernames, ",") {
+		name = strings.TrimPrefix(strings.TrimSpace(name), "@")
+		if name != "" && strings.EqualFold(name, username) {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *Plugin) getConfiguration() *configuration {

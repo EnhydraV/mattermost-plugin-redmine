@@ -1,11 +1,11 @@
 {
     "id": "com.cubedesigners.redmine",
     "name": "Redmine",
-    "description": "Ajoute une action « Créer un ticket Redmine » au menu « Actions du message » : ouvre le formulaire natif Redmine prérempli avec le contenu du message.",
+    "description": "Ajoute une action « Créer un ticket Redmine » au menu « Actions du message » : ouvre le formulaire natif Redmine prérempli avec le contenu du message. Publie aussi les notifications du plugin Redmine redmine_mattermost au nom de l'utilisateur qui a agi.",
     "homepage_url": "https://github.com/EnhydraV/mattermost-plugin-redmine",
     "support_url": "https://github.com/EnhydraV/mattermost-plugin-redmine/issues",
     "icon_path": "assets/redmine-icon.svg",
-    "min_server_version": "9.0.0",
+    "min_server_version": "12.0.0",
     "server": {
         "executables": {
             "linux-amd64": "server/dist/plugin-linux-amd64",
@@ -19,7 +19,7 @@
         "bundle_path": "webapp/dist/main.js"
     },
     "settings_schema": {
-        "header": "Le plugin n'appelle jamais l'API Redmine : il ouvre le formulaire de création de ticket prérempli dans le navigateur de l'utilisateur, avec sa propre session Redmine.",
+        "header": "Création de ticket : le plugin n'appelle jamais l'API Redmine, il ouvre le formulaire de création prérempli dans le navigateur de l'utilisateur, avec sa propre session Redmine. Relais des notifications : Redmine publie par ce plugin avec le jeton de son bot, au nom de l'utilisateur qui a agi quand il existe dans Mattermost et peut écrire dans le canal, sinon au nom du bot.",
         "footer": "",
         "settings": [
             {
@@ -45,6 +45,21 @@
                 "help_text": "ID numérique du tracker présélectionné. Optionnel, mais obligatoire dès qu'un champ personnalisé est prérempli.",
                 "placeholder": "1",
                 "default": ""
+            },
+            {
+                "key": "RelayUsernames",
+                "display_name": "Relais : compte bot de Redmine",
+                "type": "text",
+                "help_text": "Nom d'utilisateur du compte dont Redmine utilise le jeton (plusieurs noms séparés par des virgules). Les requêtes de tout autre compte sont refusées. Vide : relais désactivé.",
+                "placeholder": "redmine",
+                "default": ""
+            },
+            {
+                "key": "RelayMatchByEmail",
+                "display_name": "Relais : chercher les utilisateurs par email",
+                "type": "bool",
+                "help_text": "Quand aucun utilisateur Mattermost n'a pour nom d'utilisateur le login Redmine, le chercher par adresse email.",
+                "default": true
             }
         ]
     }

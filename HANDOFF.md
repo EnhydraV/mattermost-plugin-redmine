@@ -19,6 +19,8 @@ L'utilisateur ajuste ensuite tout manuellement dans Redmine : sujet, description
 
 L'utilisateur arrive dans son propre navigateur avec sa session Redmine : le ticket est authentiquement créé par lui, et ses permissions projet s'appliquent nativement. C'est la propriété qui justifie toute cette architecture. **Toute proposition d'« améliorer » le plugin en créant le ticket via l'API détruit cette propriété et doit être refusée.**
 
+**Seconde fonction, ajoutée le 2026-11-03 sur décision de Vincent : le relais des notifications.** Le plugin Redmine `redmine_mattermost` (dépôt `EnhydraV/redmine_mattermost`) publie les notifications de Redmine dans Mattermost avec un compte bot. Avec le relais, il appelle ce plugin, qui publie au nom de l'utilisateur qui a agi dans Redmine : Mattermost ne notifie personne de ses propres posts. Les règles ci-dessus restent entières pour la création de ticket. Le relais en est indépendant : c'est Redmine qui appelle le plugin, avec le jeton de son bot, et la seule correspondance d'identité est login Redmine -> utilisateur Mattermost, pour choisir l'auteur du post.
+
 ---
 
 ## 2. Base de fork
@@ -124,6 +126,7 @@ Sa seule raison d'exister est d'exposer la configuration et le mapping au webapp
 - Configuration plugin : `RedmineURL`, `DefaultProjectIdentifier`, `DefaultTrackerID` (optionnel).
 - `GET /api/v1/config` → renvoie l'URL Redmine et le projet applicable au canal demandé.
 - Commande slash `/redmine link|unlink|status`, écriture KV.
+- Relais (`server/relay.go`, depuis le 2026-11-03) : `POST /api/v1/posts` et `GET /api/v1/status`, réservés aux comptes listés dans `RelayUsernames`.
 
 ### Côté webapp (TypeScript + React)
 
@@ -166,7 +169,7 @@ Listées pour cadrer le périmètre, à ne pas implémenter sans arbitrage expli
 - **Rattacher un message à un ticket existant.** Le préremplissage d'une note via `/issues/:id/edit?issue[notes]=...` n'est pas documenté et **doit être testé manuellement** avant toute décision. S'il ne fonctionne pas, cette fonctionnalité impose l'API REST et sort du périmètre de ce design.
 - **Réaction emoji** posée automatiquement sur le message source comme marqueur « traité ». Impossible sans savoir si le ticket a effectivement été créé — or le plugin perd la main dès l'ouverture de l'onglet. À laisser manuel.
 - **Enrichissement des liens Redmine** dans les messages. Fonctionnalité distincte, déjà couverte par `moddi3/mattermost-plugin-redmine-link`.
-- **Notifications Redmine → Mattermost.** Déjà couvert par `redmine_messenger` côté Redmine. Ne pas réimplémenter.
+- **Notifications Redmine → Mattermost.** Couvertes par le plugin Redmine `redmine_mattermost` (qui remplace `redmine_messenger`). Ce plugin-ci n'en porte que le relais (cf. §1).
 
 ---
 
@@ -354,3 +357,22 @@ Cas de test prévus :
 10. `maxUrlLength` personnalisé respecté.
 
 Questions §8 toujours ouvertes (Mattermost version, formatage Redmine, nginx).
+
+### 2026-11-03 : fusion du relais de redmine_mattermost
+
+- Décision de Vincent : un seul plugin Mattermost pour Redmine. Le relais écrit pour
+  `redmine_mattermost` (plugin serveur `com.github.enhydrav.redmine-mattermost`, sous-dossier
+  `mattermost-plugin/` de ce dépôt-là, commit `0c6716b`, jamais installé) est déplacé ici ; `redmine_mattermost`
+  appelle désormais `/plugins/com.cubedesigners.redmine/api/v1/...`.
+- Branche `feat/relais-notifications`. `server/relay.go` (routes ajoutées au routeur mux, sous
+  le middleware d'authentification existant), `server/relay_test.go` (13 tests `plugintest.API`).
+- Réglages `RelayUsernames` (vide par défaut : relais désactivé tant qu'aucun bot n'est déclaré)
+  et `RelayMatchByEmail` (activé par défaut).
+- `min_server_version` 9.0.0 -> 12.0.0, `server/public` v0.1.21 -> v0.4.3 (version de
+  Mattermost 12.0.0, type `model.MessageAttachment`), `go` 1.25 -> 1.26.3. Point §8.1 tranché.
+- Go 1.27 (image superclaude) ne compile plus grpc 1.81 : `export GOTOOLCHAIN ?= go1.26.7` en
+  tête du `Makefile`, avant `setup.mk` qui compile les outils de build.
+- golangci-lint v2.9.0 (compilé en Go 1.26.7) : propre ; `misspell` complété (`convertis`,
+  `correspondant`, `utilise`), `strings.SplitSeq` pour `modernize`.
+- Vérifié : tests Go (relais, config, commande) et 22 tests jest verts, `make dist` OK.
+- Non vérifié : CI GitHub avec la nouvelle version de Go et de l'API, relais en conditions réelles.

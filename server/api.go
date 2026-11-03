@@ -22,6 +22,10 @@ func (p *Plugin) initRouter() *mux.Router {
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
 	apiRouter.HandleFunc("/config", p.handleGetConfig).Methods(http.MethodGet)
 
+	// Relais des notifications de Redmine, appelé avec le jeton du bot (cf. relay.go)
+	apiRouter.HandleFunc("/posts", p.handleRelayPost).Methods(http.MethodPost)
+	apiRouter.HandleFunc("/status", p.handleRelayStatus).Methods(http.MethodGet)
+
 	return router
 }
 

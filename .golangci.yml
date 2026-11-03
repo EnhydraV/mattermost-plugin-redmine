@@ -39,6 +39,9 @@ linters:
       locale: US
       ignore-rules:
         - commandes
+        - convertis
+        - correspondant
+        - utilise
     unqueryvet:
       check-sql-builders: true
   exclusions:

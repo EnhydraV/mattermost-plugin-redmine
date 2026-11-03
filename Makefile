@@ -1,3 +1,7 @@
+# Mattermost 12 se compile en Go 1.26 : grpc, tiré par l'API plugin, ne compile pas en Go 1.27.
+# Posé avant setup.mk, qui compile les outils de build.
+export GOTOOLCHAIN ?= go1.26.7
+
 GO ?= $(shell command -v go 2> /dev/null)
 NPM ?= $(shell command -v npm 2> /dev/null)
 CURL ?= $(shell command -v curl 2> /dev/null)
