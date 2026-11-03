@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/EnhydraV/mattermost-plugin-redmine/compare/v0.1.0...v0.2.0) (2026-11-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* Mattermost 12.0 minimum (au lieu de 9.0).
+
+### Fonctionnalités
+
+* relaie les notifications de redmine_mattermost au nom de l'utilisateur ([3547d66](https://github.com/EnhydraV/mattermost-plugin-redmine/commit/3547d664694477acf580006918d46f2d9fec9643))
+
 ## 0.1.0 (2026-08-25)
 
 
