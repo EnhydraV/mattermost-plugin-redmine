@@ -1,7 +1,7 @@
 {
     "id": "com.cubedesigners.redmine",
     "name": "Redmine",
-    "description": "Ajoute une action « Créer un ticket Redmine » au menu « Actions du message » : ouvre le formulaire natif Redmine prérempli avec le contenu du message. Publie aussi les notifications du plugin Redmine redmine_mattermost au nom de l'utilisateur qui a agi.",
+    "description": "Ajoute une action « Créer un ticket Redmine » au menu « Actions du message » : ouvre le formulaire natif Redmine prérempli avec le contenu du message. Publie aussi les notifications du plugin Redmine redmine_mattermost au nom de l'utilisateur qui a agi, et ajoute au ticket les réponses écrites dans leur fil.",
     "homepage_url": "https://github.com/EnhydraV/mattermost-plugin-redmine",
     "support_url": "https://github.com/EnhydraV/mattermost-plugin-redmine/issues",
     "icon_path": "assets/redmine-icon.svg",
@@ -60,6 +60,14 @@
                 "type": "bool",
                 "help_text": "Quand aucun utilisateur Mattermost n'a pour nom d'utilisateur le login Redmine, le chercher par adresse email.",
                 "default": true
+            },
+            {
+                "key": "RedmineReplySecret",
+                "display_name": "Réponses : secret partagé avec Redmine",
+                "type": "text",
+                "help_text": "Même valeur que la variable REDMINE_MATTERMOST_REPLY_SECRET de Redmine. Une réponse dans le fil d'une notification de ticket devient alors une note du ticket, puis est retirée du fil. Vide : les réponses restent dans Mattermost.",
+                "default": "",
+                "secret": true
             }
         ]
     }

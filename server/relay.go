@@ -21,6 +21,16 @@ type relayRequest struct {
 	Target relayTarget `json:"target"`
 	Actor  *relayActor `json:"actor,omitempty"`
 	Post   relayPost   `json:"post"`
+	// BotMessage remplace le message quand le post part au nom du bot : le message
+	// destiné à l'utilisateur ne nomme pas l'auteur, celui du bot le nomme.
+	BotMessage string `json:"bot_message,omitempty"`
+	// ReplyTo place le post dans le fil d'où vient la note, s'il vise le canal de ce fil.
+	ReplyTo *relayReplyTo `json:"reply_to,omitempty"`
+}
+
+type relayReplyTo struct {
+	RootID    string `json:"root_id"`
+	ChannelID string `json:"channel_id"`
 }
 
 // relayTarget désigne un canal (équipe + nom) ou un utilisateur pour un message direct.
@@ -123,6 +133,12 @@ func (p *Plugin) handleRelayPost(w http.ResponseWriter, r *http.Request) {
 
 	post.UserId = poster.Id
 	post.ChannelId = channel.Id
+	if poster.Id == requester.Id && req.BotMessage != "" {
+		post.Message = req.BotMessage
+	}
+	if req.ReplyTo != nil && req.ReplyTo.RootID != "" && req.ReplyTo.ChannelID == channel.Id {
+		post.RootId = req.ReplyTo.RootID
+	}
 	created, appErr := p.API.CreatePost(post)
 	if appErr != nil {
 		p.API.LogError("Failed to create the Redmine post", "error", appErr.Error())

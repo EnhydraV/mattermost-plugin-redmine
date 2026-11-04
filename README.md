@@ -41,6 +41,7 @@ C'est Redmine qui appelle le plugin ; le plugin ne parle toujours pas à Redmine
 | **Tracker par défaut (ID)** | ID numérique du tracker présélectionné. Optionnel. |
 | **Relais : compte bot de Redmine** | Nom d'utilisateur du bot dont Redmine utilise le jeton (plusieurs noms séparés par des virgules). Vide : relais désactivé. |
 | **Relais : chercher les utilisateurs par email** | Quand aucun utilisateur n'a pour nom d'utilisateur le login Redmine, le chercher par email. Activé par défaut. |
+| **Réponses : secret partagé avec Redmine** | Même valeur que `REDMINE_MATTERMOST_REPLY_SECRET` côté Redmine. Vide : les réponses aux notifications restent dans Mattermost. |
 
 L'identifiant de projet est celui qui figure dans l'URL Redmine
 (`https://redmine.example.com/projects/<identifiant>`).
@@ -102,6 +103,21 @@ Routes, appelées par Redmine avec le jeton du bot :
 - `POST /plugins/com.cubedesigners.redmine/api/v1/posts` : `{target: {team, channel} | {username}, actor: {username, email}, post: {message, props}}`, réponse `{post_id, user_id, as_actor}` ;
 - `GET /plugins/com.cubedesigners.redmine/api/v1/status` : identifiant et version du plugin.
 
+### Répondre à une notification de ticket
+
+Une réponse écrite dans le fil d'une notification de ticket devient une note de ce ticket, au nom
+de l'utilisateur Redmine qui a le même nom d'utilisateur, ou à défaut la même adresse email, et
+qui a le droit d'ajouter des notes. Redmine l'accepte : la réponse est retirée du fil, et la
+notification de la note y prend sa place. Redmine la refuse (compte introuvable, droit manquant) :
+la réponse reste, et son auteur reçoit un message éphémère qui explique pourquoi. Une réponse avec
+des fichiers joints n'est pas transmise.
+
+Mise en place : générer un secret (`openssl rand -hex 32`), le donner à Redmine dans la variable
+`REDMINE_MATTERMOST_REPLY_SECRET` et au plugin dans **Réponses : secret partagé avec Redmine**.
+Le plugin appelle `POST {URL de Redmine}/mattermost/replies` avec l'en-tête
+`X-Redmine-Mattermost-Secret`. Les modifications et suppressions ultérieures d'une réponse ne sont
+pas répercutées.
+
 ### Langue
 
 L'interface (libellé du menu, messages d'erreur) suit la langue de l'utilisateur Mattermost :
@@ -131,6 +147,7 @@ Pour le déploiement local, définir `MM_SERVICESETTINGS_SITEURL` et `MM_ADMIN_T
   (`GET /plugins/com.cubedesigners.redmine/api/v1/config?channel_id=`), gère `/redmine` et
   le mapping canal → projet en KV (`server/store/kvstore`). Ne parle jamais à Redmine.
 - `server/relay.go` : relais des notifications de Redmine (`/api/v1/posts`, `/api/v1/status`).
+- `server/replies.go` : hook `MessageHasBeenPosted`, réponses aux notifications envoyées à Redmine.
 - `webapp/src/redmine/buildIssueUrl.ts` : construction de l'URL préremplie et budget de
   troncature (module pur, testé).
 - `webapp/src/redmine/` : contexte du message (`postContext.ts`), appel de configuration

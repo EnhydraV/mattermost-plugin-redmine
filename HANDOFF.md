@@ -376,3 +376,22 @@ Questions §8 toujours ouvertes (Mattermost version, formatage Redmine, nginx).
   `correspondant`, `utilise`), `strings.SplitSeq` pour `modernize`.
 - Vérifié : tests Go (relais, config, commande) et 22 tests jest verts, `make dist` OK.
 - Non vérifié : CI GitHub avec la nouvelle version de Go et de l'API, relais en conditions réelles.
+
+### 2026-11-04 : message du bot et réponses vers Redmine
+
+- Branche `feat/reponses-redmine`, partie mattermost du travail fait côté `redmine_mattermost` 2.1.0.
+- Relais : `bot_message` remplace le message quand le post part au nom du bot (le message de
+  l'utilisateur ne nomme plus l'auteur) ; `reply_to` (`root_id`, `channel_id`) place le post dans
+  le fil d'origine quand le canal visé est celui du fil.
+- Réponses (décision de Vincent : appel serveur à serveur accepté, écho réglé en supprimant la
+  réponse du fil) : `server/replies.go`, hook `MessageHasBeenPosted`. Une réponse dont la racine
+  porte `redmine_issue_id` part vers `{RedmineURL}/mattermost/replies` avec l'en-tête
+  `X-Redmine-Mattermost-Secret` ; 201 : `DeletePost` ; refus : message éphémère, réponse gardée.
+  Les posts qui portent eux-mêmes `redmine_issue_id` (nos notifications) sont ignorés : pas de
+  boucle. Réponse avec fichiers : non transmise, message éphémère.
+- Nouveau réglage `RedmineReplySecret` (`secret: true`). Exception de plus au §1 : le plugin
+  appelle désormais Redmine, pour cette fonction seulement, avec un secret partagé et sans clé
+  d'API ; la création de ticket reste inchangée.
+- Vérifié : tests Go (relais et réponses contre un faux Redmine `httptest`), golangci-lint
+  v2.9.0 propre hors CRLF de `build/`, Semgrep propre, `make dist`.
+- Non vérifié : en conditions réelles (dépend du déploiement de redmine_mattermost 2.1.0).

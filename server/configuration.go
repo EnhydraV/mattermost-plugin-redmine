@@ -7,8 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// configuration reflète le settings_schema de plugin.json. Aucune valeur n'est un secret :
-// les trois premières servent à construire l'URL du formulaire, les deux dernières au relais.
+// configuration reflète le settings_schema de plugin.json. Seul RedmineReplySecret est un secret.
 type configuration struct {
 	RedmineURL               string
 	DefaultProjectIdentifier string
@@ -18,6 +17,10 @@ type configuration struct {
 	RelayUsernames string
 	// RelayMatchByEmail cherche l'utilisateur par email quand son login Redmine ne correspond à aucun compte.
 	RelayMatchByEmail bool
+
+	// RedmineReplySecret est partagé avec Redmine (REDMINE_MATTERMOST_REPLY_SECRET) : vide, les
+	// réponses aux notifications restent dans Mattermost.
+	RedmineReplySecret string
 }
 
 // Clone shallow copies the configuration.
@@ -33,6 +36,7 @@ func (c *configuration) normalized() *configuration {
 	clone.DefaultProjectIdentifier = strings.TrimSpace(clone.DefaultProjectIdentifier)
 	clone.DefaultTrackerID = strings.TrimSpace(clone.DefaultTrackerID)
 	clone.RelayUsernames = strings.TrimSpace(clone.RelayUsernames)
+	clone.RedmineReplySecret = strings.TrimSpace(clone.RedmineReplySecret)
 	return clone
 }
 

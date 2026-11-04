@@ -197,6 +197,60 @@ func TestRelayDirectMessageIsSentByActor(t *testing.T) {
 	require.Equal(t, http.StatusCreated, w.Code, w.Body.String())
 }
 
+func TestRelayBotMessageIsUsedWhenTheBotPosts(t *testing.T) {
+	p, api := newRelayPlugin(t)
+	api.On("GetUser", "bot-id").Return(relayBot, nil)
+	api.On("GetUserByUsername", "charlie").Return(relayCharlie, nil)
+	expectRelayChannel(api)
+	api.On("HasPermissionToChannel", "charlie-id", "channel-id", model.PermissionCreatePost).Return(false)
+	api.On("HasPermissionToChannel", "bot-id", "channel-id", model.PermissionCreatePost).Return(true)
+	api.On("CreatePost", mock.MatchedBy(func(post *model.Post) bool {
+		return post.UserId == "bot-id" && post.Message == "Updated by Charlie"
+	})).Return(&model.Post{Id: "post-id", UserId: "bot-id"}, nil)
+
+	body := `{"target": {"team": "dev", "channel": "redmine"}, "actor": {"username": "charlie"},
+		"post": {"message": "Updated"}, "bot_message": "Updated by Charlie"}`
+	w := serveRelay(p, http.MethodPost, "/api/v1/posts", "bot-id", body)
+
+	require.Equal(t, http.StatusCreated, w.Code, w.Body.String())
+}
+
+func TestRelayActorKeepsTheShortMessage(t *testing.T) {
+	p, api := newRelayPlugin(t)
+	api.On("GetUser", "bot-id").Return(relayBot, nil)
+	api.On("GetUserByUsername", "charlie").Return(relayCharlie, nil)
+	expectRelayChannel(api)
+	api.On("HasPermissionToChannel", "charlie-id", "channel-id", model.PermissionCreatePost).Return(true)
+	api.On("CreatePost", mock.MatchedBy(func(post *model.Post) bool {
+		return post.UserId == "charlie-id" && post.Message == "Updated"
+	})).Return(&model.Post{Id: "post-id", UserId: "charlie-id"}, nil)
+
+	body := `{"target": {"team": "dev", "channel": "redmine"}, "actor": {"username": "charlie"},
+		"post": {"message": "Updated"}, "bot_message": "Updated by Charlie"}`
+	w := serveRelay(p, http.MethodPost, "/api/v1/posts", "bot-id", body)
+
+	require.Equal(t, http.StatusCreated, w.Code, w.Body.String())
+}
+
+func TestRelayReplyToJoinsTheThreadOfTheSameChannel(t *testing.T) {
+	for channelID, wantRoot := range map[string]string{"channel-id": "root-1", "elsewhere": ""} {
+		p, api := newRelayPlugin(t)
+		api.On("GetUser", "bot-id").Return(relayBot, nil)
+		api.On("GetUserByUsername", "charlie").Return(relayCharlie, nil)
+		expectRelayChannel(api)
+		api.On("HasPermissionToChannel", "charlie-id", "channel-id", model.PermissionCreatePost).Return(true)
+		api.On("CreatePost", mock.MatchedBy(func(post *model.Post) bool {
+			return post.RootId == wantRoot
+		})).Return(&model.Post{Id: "post-id", UserId: "charlie-id"}, nil)
+
+		body := `{"target": {"team": "dev", "channel": "redmine"}, "actor": {"username": "charlie"},
+			"post": {"message": "Note"}, "reply_to": {"root_id": "root-1", "channel_id": "` + channelID + `"}}`
+		w := serveRelay(p, http.MethodPost, "/api/v1/posts", "bot-id", body)
+
+		require.Equal(t, http.StatusCreated, w.Code, "reply_to channel %s: %s", channelID, w.Body.String())
+	}
+}
+
 func TestRelayStatusReturnsPluginVersion(t *testing.T) {
 	p, api := newRelayPlugin(t)
 	api.On("GetUser", "bot-id").Return(relayBot, nil)
