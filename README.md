@@ -100,7 +100,7 @@ les posts créés par un plugin ne marquant pas le canal comme vu.
 
 Routes, appelées par Redmine avec le jeton du bot :
 
-- `POST /plugins/com.cubedesigners.redmine/api/v1/posts` : `{target: {team, channel} | {username}, actor: {username, email}, post: {message, props}}`, réponse `{post_id, user_id, as_actor}` ;
+- `POST /plugins/com.cubedesigners.redmine/api/v1/posts` : `{target: {team, channel} | {username}, actor: {username, email}, post: {message, props}, files: [{name, data}]}`, réponse `{post_id, user_id, as_actor}`. `files` (optionnel) : images collées dans une note Redmine, contenu en base64, 5 fichiers de 10 Mo au plus ; elles sont téléversées dans le canal et jointes au post. Un téléversement refusé renvoie 422 et rien n'est publié : Redmine publie alors par le bot, avec des liens vers les images ;
 - `GET /plugins/com.cubedesigners.redmine/api/v1/status` : identifiant et version du plugin.
 
 ### Répondre à une notification de ticket

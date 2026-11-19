@@ -251,6 +251,54 @@ func TestRelayReplyToJoinsTheThreadOfTheSameChannel(t *testing.T) {
 	}
 }
 
+// "cG5nLWRhdGE=" : "png-data" en base64
+const relayFilesBody = `{"target": {"team": "dev", "channel": "redmine"}, "actor": {"username": "charlie"},
+	"post": {"message": "Note"}, "files": [{"name": "capture.png", "data": "cG5nLWRhdGE="}]}`
+
+func TestRelayFilesAreUploadedAndAttached(t *testing.T) {
+	p, api := newRelayPlugin(t)
+	api.On("GetUser", "bot-id").Return(relayBot, nil)
+	api.On("GetUserByUsername", "charlie").Return(relayCharlie, nil)
+	expectRelayChannel(api)
+	api.On("HasPermissionToChannel", "charlie-id", "channel-id", model.PermissionCreatePost).Return(true)
+	api.On("UploadFile", []byte("png-data"), "channel-id", "capture.png").Return(&model.FileInfo{Id: "file-1"}, nil)
+	api.On("CreatePost", mock.MatchedBy(func(post *model.Post) bool {
+		return post.UserId == "charlie-id" && len(post.FileIds) == 1 && post.FileIds[0] == "file-1"
+	})).Return(&model.Post{Id: "post-id", UserId: "charlie-id"}, nil)
+
+	w := serveRelay(p, http.MethodPost, "/api/v1/posts", "bot-id", relayFilesBody)
+
+	require.Equal(t, http.StatusCreated, w.Code, w.Body.String())
+}
+
+func TestRelayFailedUploadIsRefusedWithoutPost(t *testing.T) {
+	p, api := newRelayPlugin(t)
+	api.On("GetUser", "bot-id").Return(relayBot, nil)
+	api.On("GetUserByUsername", "charlie").Return(relayCharlie, nil)
+	expectRelayChannel(api)
+	api.On("HasPermissionToChannel", "charlie-id", "channel-id", model.PermissionCreatePost).Return(true)
+	api.On("UploadFile", mock.Anything, "channel-id", "capture.png").
+		Return(nil, model.NewAppError("test", "too_large", nil, "", http.StatusRequestEntityTooLarge))
+	api.On("LogError", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+
+	w := serveRelay(p, http.MethodPost, "/api/v1/posts", "bot-id", relayFilesBody)
+
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	api.AssertNotCalled(t, "CreatePost", mock.Anything)
+}
+
+func TestRelayTooManyFilesAreRejected(t *testing.T) {
+	p, api := newRelayPlugin(t)
+	api.On("GetUser", "bot-id").Return(relayBot, nil)
+
+	files := strings.Repeat(`{"name": "capture.png", "data": "cG5nLWRhdGE="},`, relayMaxFiles+1)
+	body := `{"target": {"team": "dev", "channel": "redmine"}, "post": {"message": "Note"}, "files": [` +
+		strings.TrimSuffix(files, ",") + `]}`
+	w := serveRelay(p, http.MethodPost, "/api/v1/posts", "bot-id", body)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
 func TestRelayStatusReturnsPluginVersion(t *testing.T) {
 	p, api := newRelayPlugin(t)
 	api.On("GetUser", "bot-id").Return(relayBot, nil)

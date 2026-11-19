@@ -14,7 +14,13 @@ import (
 // Mattermost ne notifie personne de ses propres posts : l'utilisateur ne l'est donc pas de ce
 // qu'il vient de faire. Le plugin ne parle toujours pas à Redmine, c'est Redmine qui l'appelle.
 
-const relayMaxBodyBytes = 1 << 20
+const (
+	// Images collées dans une note : 5 fichiers de 10 Mo au plus, transmis en base64.
+	relayMaxFiles     = 5
+	relayMaxFileBytes = 10 << 20
+	// Le base64 grossit les fichiers d'un tiers ; 1 Mo pour le reste du post.
+	relayMaxBodyBytes = 1<<20 + relayMaxFiles*relayMaxFileBytes*4/3
+)
 
 // relayRequest est le corps de POST /api/v1/posts envoyé par Redmine.
 type relayRequest struct {
@@ -26,6 +32,14 @@ type relayRequest struct {
 	BotMessage string `json:"bot_message,omitempty"`
 	// ReplyTo place le post dans le fil d'où vient la note, s'il vise le canal de ce fil.
 	ReplyTo *relayReplyTo `json:"reply_to,omitempty"`
+	// Files sont téléversés dans le canal de destination et joints au post.
+	Files []relayFile `json:"files,omitempty"`
+}
+
+// relayFile : Data arrive en base64, décodé par encoding/json.
+type relayFile struct {
+	Name string `json:"name"`
+	Data []byte `json:"data"`
 }
 
 type relayReplyTo struct {
@@ -76,6 +90,14 @@ func (r *relayRequest) validate() *httpError {
 	}
 	if r.Target.Username == "" && (r.Target.Team == "" || r.Target.Channel == "") {
 		return newHTTPError(http.StatusBadRequest, "target needs a username, or a team and a channel")
+	}
+	if len(r.Files) > relayMaxFiles {
+		return newHTTPError(http.StatusBadRequest, "at most %d files", relayMaxFiles)
+	}
+	for _, file := range r.Files {
+		if strings.TrimSpace(file.Name) == "" || len(file.Data) == 0 || len(file.Data) > relayMaxFileBytes {
+			return newHTTPError(http.StatusBadRequest, "each file needs a name and at most %d bytes", relayMaxFileBytes)
+		}
 	}
 	return nil
 }
@@ -139,6 +161,10 @@ func (p *Plugin) handleRelayPost(w http.ResponseWriter, r *http.Request) {
 	if req.ReplyTo != nil && req.ReplyTo.RootID != "" && req.ReplyTo.ChannelID == channel.Id {
 		post.RootId = req.ReplyTo.RootID
 	}
+	if post.FileIds, herr = p.uploadRelayFiles(channel.Id, req.Files); herr != nil {
+		writeError(w, herr)
+		return
+	}
 	created, appErr := p.API.CreatePost(post)
 	if appErr != nil {
 		p.API.LogError("Failed to create the Redmine post", "error", appErr.Error())
@@ -151,6 +177,25 @@ func (p *Plugin) handleRelayPost(w http.ResponseWriter, r *http.Request) {
 		UserID:  created.UserId,
 		AsActor: actor != nil && poster.Id == actor.Id,
 	})
+}
+
+// uploadRelayFiles téléverse les fichiers dans le canal. Un fichier téléversé par un plugin n'a pas
+// de créateur ("nouser") : Mattermost accepte de le joindre au post de l'acteur comme à celui du bot.
+// Un échec renvoie 422 : Redmine publie alors par le bot, avec des liens vers les images.
+func (p *Plugin) uploadRelayFiles(channelID string, files []relayFile) (model.StringArray, *httpError) {
+	if len(files) == 0 {
+		return nil, nil
+	}
+	ids := make(model.StringArray, 0, len(files))
+	for _, file := range files {
+		info, appErr := p.API.UploadFile(file.Data, channelID, file.Name)
+		if appErr != nil {
+			p.API.LogError("Failed to upload a Redmine image", "file", file.Name, "error", appErr.Error())
+			return nil, newHTTPError(http.StatusUnprocessableEntity, "upload of %s failed: %s", file.Name, appErr.Message)
+		}
+		ids = append(ids, info.Id)
+	}
+	return ids, nil
 }
 
 // buildRelayPost recopie le message et ses props ; les attachments sont convertis dans le type du serveur.

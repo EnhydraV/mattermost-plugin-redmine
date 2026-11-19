@@ -395,3 +395,21 @@ Questions §8 toujours ouvertes (Mattermost version, formatage Redmine, nginx).
 - Vérifié : tests Go (relais et réponses contre un faux Redmine `httptest`), golangci-lint
   v2.9.0 propre hors CRLF de `build/`, Semgrep propre, `make dist`.
 - Non vérifié : en conditions réelles (dépend du déploiement de redmine_mattermost 2.1.0).
+
+### 2026-11-19 : images collées dans les notes
+
+- Demande de Vincent : afficher dans Mattermost les images collées dans une note Redmine (le
+  `<img src="clipboard-...png">` arrivait brut). Choix de Vincent : fichiers joints au post,
+  images citées dans le texte seulement. Côté Redmine : redmine_mattermost 2.2.0.
+- Relais : `files` = `[{name, data}]` (`data` en base64, décodé en `[]byte` par `encoding/json`),
+  5 fichiers de 10 Mo au plus (400 au-delà), corps limité à 1 Mo plus 5 x 10 Mo en base64.
+  `UploadFile(data, channel.Id, name)` après `resolveDestination`, `post.FileIds` ; un échec de
+  téléversement renvoie 422 sans publier, Redmine se rabat sur le bot avec des liens.
+- Vérifié dans les sources de Mattermost 12.0.1 : `UploadFile` d'un plugin crée le fichier avec
+  `CreatorId = "nouser"`, accepté par `FileInfo.AttachToPost` pour n'importe quel auteur ; pas
+  besoin de `CopyFileInfos`.
+- À déployer AVANT redmine_mattermost 2.2.0 : le relais 0.1.0 ignore `files` (image retirée du
+  texte et perdue) et refuse au-delà de 1 Mo (repli sur le bot, liens).
+- Vérifié : tests Go, go vet, golangci-lint (rien de neuf ; restent le CRLF de `server/main.go`
+  et un gofumpt de `replies_test.go`), Semgrep.
+- Non vérifié : en conditions réelles sur gremlins.
